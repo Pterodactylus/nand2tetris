@@ -1,0 +1,33 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/a/PC.hdl
+
+/**
+ * 16-bit counter with load and reset controls.
+ *
+ * If reset(t-1) then out(t) = 0
+ *    else if load(t-1) then out(t) = in(t-1)
+ *         else if inc(t-1) then out(t) = out(t-1) + 1 (integer addition)
+ *              else out(t) = out(t-1)
+ */
+
+CHIP PC {
+    IN in[16],load,inc,reset;
+    OUT out[16];
+
+    PARTS:
+    /**
+     * The precedence of signals is: load -> inc -> reset.
+     * From playing with emulator, when load=1, then inc has
+     * no effect. Hence, inc only works when load is not asserted.
+     */
+     Mux16(a=reg0Output, b=in, sel=load, out=toIncMux);
+     Not(in=load, out=notLoad);
+     And(a=notLoad, b=inc, out=incNotLoad);
+     Inc16(in=toIncMux, out=incremented);
+     Mux16(a=toIncMux, b=incremented, sel=incNotLoad, out=toResetMux);
+     Mux16(a=toResetMux, b=false, sel=reset, out=toRegister);
+     Register(in=toRegister, load=true, out=reg0Output, out=out);
+}
+

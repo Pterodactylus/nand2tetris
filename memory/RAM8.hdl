@@ -1,0 +1,45 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/a/RAM8.hdl
+
+/**
+ * Memory of 8 registers, each 16-bit wide.  
+ * The chip facilitates read and write operations, as follows:
+ *     Read:  out(t) = RAM8[address(t)](t)
+ *     Write: If load(t-1) then RAM8[address(t-1)](t) = in(t-1)
+ * In words: the chip always outputs the value stored at the memory 
+ * location specified by address. If load == 1, the in value is loaded 
+ * into the memory location specified by address.  This value becomes 
+ * available through the out output starting from the next time step.
+ */
+
+CHIP RAM8 {
+    IN in[16], load, address[3];
+    OUT out[16];
+
+    PARTS:
+    /**
+     * Use an 8-way demux to select one of eight registers.
+     */
+    DMux8Way(in=load, sel=address, a=w1, b=w2, c=w3, d=w4, e=w5, f=w6, g=w7, h=w8);
+
+    /**
+     * Each of 8 registers emits a value as registerX.
+     */
+    Register(in=in, load=w1, out=register0);
+    Register(in=in, load=w2, out=register1);
+    Register(in=in, load=w3, out=register2);
+    Register(in=in, load=w4, out=register3);
+
+    Register(in=in, load=w5, out=register4);
+    Register(in=in, load=w6, out=register5);
+    Register(in=in, load=w7, out=register6);
+    Register(in=in, load=w8, out=register7);
+
+    /**
+     * Hence, use an 8-way 16-bit Mux to select which register's
+     * out value is the output.
+     */
+    Mux8Way16(a=register0, b=register1, c=register2, d=register3, e=register4, f=register5, g=register6, h=register7, sel=address, out=out); 
+}
