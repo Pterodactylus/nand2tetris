@@ -10,7 +10,10 @@ class CodeWriter(object):
         self.label_num = 0
 
     def write_init(self):
-        pass
+        self.write_a_command('256')
+        self.write_c_command('D', 'A')
+        self.comp_to_reg('D', R_SP)
+        self.write_call('Sys.init', 0)
 
     def set_file_name(self, input_file):
         self.vm_file, ext = os.path.splitext(input_file)
@@ -113,22 +116,61 @@ class CodeWriter(object):
             self.gen_compare('JLT')
 
     def write_label(self, label):
-        pass
+        self.write_l_command(label)
 
     def write_goto(self, label):
-        pass
+        self.write_a_command(label)
+        self.write_c_command(None, '0', 'JMP')
 
     def write_if(self, label):
-        pass
+        self.pop_to_dest('D')
+        self.write_a_command(label)
+        self.write_c_command(None, 'D', 'JNE')
 
     def write_call(self, function_name, num_args):
-        pass
+        ret_address = self.gen_label()
+        self.gen_push(SEG_CONSTANT, ret_address)
+        self.gen_push(SEG_REG, R_LCL)
+        self.gen_push(SEG_REG, R_ARG)
+        self.gen_push(SEG_REG, R_THIS)
+        self.gen_push(SEG_REG, R_THAT)
+        self.load_sp_offset(-num_args - 5)
+        self.comp_to_reg('D', R_ARG)
+        self.reg_to_reg(R_SP, R_LCL)
+        self.write_goto(function_name)
+        self.write_l_command(ret_address)
+
+    def load_sp_offset(self, offset):
+        self.load_segment(self.gen_asm_reg(R_SP), offset)
 
     def write_return(self):
-        pass
+        self.reg_to_reg(R_LCL, R_FRAME)
+        self.write_a_command('5')
+        self.write_c_command('A', 'D-A')
+        self.write_c_command('D', 'M')
+        self.comp_to_reg('D', R_RETURN)
+        self.gen_pop(SEG_ARGUMENT, 0)
+        self.reg_to_dest(R_ARG, 'D')
+        self.comp_to_reg('D+1', R_SP)
+        self.frame_to_reg(R_THAT)
+        self.frame_to_reg(R_THIS)
+        self.frame_to_reg(R_ARG)
+        self.frame_to_reg(R_LCL)
+        self.reg_to_dest(R_RETURN, 'A')
+        self.write_c_command(None, '0', 'JMP')
+
+    def frame_to_reg(self, segment):
+        self.reg_to_dest(R_FRAME, 'D')
+        self.write_c_command('D', 'D-1')
+        self.comp_to_reg('D', R_FRAME)
+        self.write_c_command('A', 'D')
+        self.write_c_command('D', 'M')
+        self.comp_to_reg('D', segment)
 
     def write_function(self, function_name, num_locals):
-        pass
+        self.write_l_command(function_name)
+        for i in range(num_locals):
+            self.gen_push(SEG_CONSTANT, 0)
 
     def gen_unary(self, comp):
         self.decrement_sp()
@@ -177,8 +219,8 @@ class CodeWriter(object):
         self.write_c_command(dest, 'M')
 
     def reg_to_reg(self, src, dest):
-        self.reg_to_dest('D', src)
-        self.comp_to_reg(dest, 'D')
+        self.reg_to_dest(src, 'D')
+        self.comp_to_reg('D', dest)
 
     def pop_to_dest(self, dest):
         self.decrement_sp()
