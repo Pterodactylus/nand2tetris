@@ -12,6 +12,7 @@ class VMTranslator(object):
 	def convert_all_files(self, input_files, output_file):
 		if input_files != []:
 			code_writer = CodeWriter.CodeWriter(output_file)
+			code_writer.write_init()
 			for input_file in input_files:
 				self.convert(input_file, code_writer)
 			code_writer.close()
@@ -40,4 +41,4 @@ class VMTranslator(object):
 		elif cmd_type == CALL_CMD:
 			code_writer.write_call(p.get_arg1(), p.get_arg2())
 		elif cmd_type == RET_CMD:
-			pass
+			code_writer.write_return()
